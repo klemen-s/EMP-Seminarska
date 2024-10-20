@@ -40,8 +40,8 @@ Ensure you have the following installed:
 
 ### Installation
 
-1. Clone the repository: `git clone https://github.com/klemen-s/avantis-mobile-emp.git`.
-2. Navigate to the project directory: `cd avantis-mobile-emp`.
+1. Clone the repository: `git clone https://github.com/klemen-s/EMP-Seminarska.git`.
+2. Navigate to the project directory: `cd EMP-Seminarska`.
 3. Install dependencies: `npm install` or `yarn install`.
 
 ### Running the App
