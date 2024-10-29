@@ -54,7 +54,8 @@ def get_data(gender):
         driver.get(url)
 
         # Sleep in case of CAPTCHA solving
-        time.sleep(40)
+        # time.sleep(40)
+        time.sleep(3)
 
         make_page_load()
         print(f"Fetching all links on page for current gender ({gender})...")
@@ -113,8 +114,10 @@ def save_to_db(products):
 
 if __name__ == "__main__":
     get_data("men")
+    save_to_db(products_data.get("men"))
+    
     get_data("women")
+    save_to_db(products_data.get("women"))
+    
     driver.quit()
 
-    save_to_db(products_data.get("men"))
-    save_to_db(products_data.get("women"))
