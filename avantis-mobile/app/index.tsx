@@ -1,7 +1,6 @@
 import { View, StyleSheet } from "react-native";
 import { Link } from 'expo-router';
 
-
 export default function Index() {
   return (
     <View
@@ -12,10 +11,10 @@ export default function Index() {
         justifyContent: "center",
       }}
     >
-      <Link href='/men' style={styles.button}>
+      <Link href='/products?gender=men' style={styles.button}>
         Men
       </Link>
-      <Link href="/women" style={styles.button}>
+      <Link href="/products?gender=women" style={styles.button}>
         Women
       </Link>
       <Link href="/login" style={styles.button}>
