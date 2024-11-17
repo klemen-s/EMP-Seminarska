@@ -54,7 +54,7 @@ export default function Product({ productName, imageUrl, id, price, marginTop}: 
                     borderTopColor: "#999999",
                     borderTopWidth: 1,
                     borderBottomColor: "#999999",
-                    borderBottomWidth: 1,
+                    borderBottomWidth: 5,
                 }}>
                 Details
             </Link>

@@ -7,6 +7,7 @@ from pymongo import MongoClient
 driver = webdriver.Chrome()
 products_data = {"men": [], "women": []}
 
+#
 
 def make_page_load():
     """Get rid of notifications so page can load"""
