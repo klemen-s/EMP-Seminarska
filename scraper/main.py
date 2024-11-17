@@ -84,7 +84,7 @@ def get_data(gender):
                 {
                     "title": title,
                     "price": price,
-                    "url": static_image_url,
+                    "imageUrl": static_image_url,
                     "gender": gender,
                     "sizes": sizes,
                 }
