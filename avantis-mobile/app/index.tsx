@@ -36,6 +36,7 @@ const styles = StyleSheet.create({
     shadowColor: 'black',
     borderColor: 'black',
     borderWidth: 1,
+    borderRadius: 8,
     textAlign: "center",
     textAlignVertical: "center",
     lineHeight: 34
