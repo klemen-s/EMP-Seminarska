@@ -1,10 +1,12 @@
-// id
 import React, { useState } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { useLocalSearchParams } from "expo-router";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
+  const navigation = useNavigation();
 
   const products = [
     {
@@ -76,9 +78,42 @@ export default function ProductDetailScreen() {
           ))}
         </View>
 
-        <TouchableOpacity style={styles.addToCartButton}>
+        <TouchableOpacity
+          style={styles.addToCartButton}
+          onPress={() => {
+            if (!selectedSize) {
+              alert('Please select a size before adding to the cart!');
+              return;
+            }
+            const addToCart = async () => {
+              try {
+                const cart = JSON.parse(await AsyncStorage.getItem('cart')) || [];
+                const existingItemIndex = cart.findIndex(item => item.id === product.id && item.selectedSize === selectedSize);
+                if (existingItemIndex > -1) {
+                  cart[existingItemIndex].quantity += 1;
+                } else {
+                  cart.push({ ...product, selectedSize, quantity: 1 });
+                }
+                await AsyncStorage.setItem('cart', JSON.stringify(cart));
+                Alert.alert(
+                  'Product added to cart!',
+                  '',
+                  [
+                    { text: 'OK' },
+                    { text: 'Go to Cart', onPress: () => navigation.navigate('cart/index') }
+                  ]
+                );
+              } catch (error) {
+                console.error('Error adding to cart:', error);
+                alert('Failed to add product to cart. Please try again.');
+              }
+            };
+            addToCart(); // Call the function
+          }}
+        >
           <Text style={styles.addToCartText}>Add to Cart</Text>
         </TouchableOpacity>
+
       </View>
     </ScrollView>
   );
