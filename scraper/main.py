@@ -78,6 +78,15 @@ def get_data(gender):
                 if len(size.text.strip()) > 0
             ]
 
+            product_type = soup.select(
+                "ul.b-breadcrumbs-list li.b-breadcrumbs-item a.b-breadcrumbs-link"
+            )[2].text.strip()
+
+            colors = [
+                color.get("title")
+                for color in soup.select("button.b-variation_swatch.m-swatch")
+            ]
+
             # Append product details to gender's array
             products_data[gender].append(
                 {
@@ -86,6 +95,8 @@ def get_data(gender):
                     "url": static_image_url,
                     "gender": gender,
                     "sizes": sizes,
+                    "product_type": product_type,
+                    "colors": colors,
                 }
             )
             print("Item added")
@@ -115,9 +126,8 @@ def save_to_db(products):
 if __name__ == "__main__":
     get_data("men")
     save_to_db(products_data.get("men"))
-    
+
     get_data("women")
     save_to_db(products_data.get("women"))
-    
-    driver.quit()
 
+    driver.quit()

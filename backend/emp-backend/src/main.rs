@@ -9,7 +9,7 @@ use services::db::Database;
 
 #[get("/")]
 async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello Medium!")
+    HttpResponse::Ok().body("Hello!")
 }
 
 #[actix_web::main]

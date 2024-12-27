@@ -8,4 +8,6 @@ pub struct Product {
     pub price: String,
     pub gender: String,
     pub size: Vec<String>,
+    pub colors: Vec<String>,
+    pub product_type: String,
 }
