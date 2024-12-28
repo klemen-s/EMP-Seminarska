@@ -6,6 +6,7 @@ use crate::models::filters::FilterId;
 use crate::models::filters::UserFilter;
 use crate::models::order::Order;
 use crate::models::product::Product;
+use crate::models::user::UserId;
 use crate::models::user::{CreateUser, LoginUser, User};
 use crate::services::util::sha256_helper;
 
@@ -486,6 +487,32 @@ impl Database {
     //////////////////////////////////////////////////////////////////////////////////////////
     // Filter profile
     //////////////////////////////////////////////////////////////////////////////////////////
+
+    pub async fn db_get_filter_profiles(
+        &self,
+        user: UserId,
+    ) -> Result<Vec<UserFilter>, WebError> {
+        let cursor = self
+            .user_filter
+              .find(doc! {"user_id": ObjectId::parse_str(user.user_id).expect("Failed to parse user_id")})
+            .await
+            .map_err(|e| {
+                return actix_web::error::ErrorInternalServerError(format!(
+                    "Error getting user filter profiles: {}",
+                    e
+                ));
+            })?;
+
+        let filters: Vec<UserFilter> = cursor.try_collect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!(
+                "Error collecting user filter profiles: {}",
+                e
+            ))
+        })?;
+
+        Ok(filters)
+    }
+
     pub async fn db_create_filter_profile(&self, user_filter: UserFilter) -> Result<(), WebError> {
         let query = self.user_filter.insert_one(user_filter).await;
 
