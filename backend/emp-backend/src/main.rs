@@ -3,7 +3,10 @@ mod routes;
 mod services;
 
 use actix_web::{get, web::Data, App, HttpResponse, HttpServer, Responder};
-use env_logger::Env;
+use routes::cart_route::{add_cart_item, remove_cart_item};
+use routes::filter_route::{create_user_filter_profile, delete_user_filter_profile};
+use routes::order_route::{get_user_order, get_user_orders, post_user_order};
+use routes::product_route::{get_product, get_products_by_filter};
 use routes::user_route::{delete_user, login, register};
 use services::db::Database;
 
@@ -26,6 +29,15 @@ async fn main() -> std::io::Result<()> {
             .service(login)
             .service(register)
             .service(delete_user)
+            .service(get_products_by_filter)
+            .service(get_product)
+            .service(get_user_orders)
+            .service(get_user_order)
+            .service(post_user_order)
+            .service(add_cart_item)
+            .service(remove_cart_item)
+            .service(create_user_filter_profile)
+            .service(delete_user_filter_profile)
     })
     .bind(("localhost", 5001))?
     .run()

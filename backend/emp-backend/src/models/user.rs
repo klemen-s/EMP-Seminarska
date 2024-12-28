@@ -25,6 +25,6 @@ pub struct LoginUser {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct DeleteUser {
-    pub _id: String,
+pub struct UserId {
+    pub user_id: String,
 }

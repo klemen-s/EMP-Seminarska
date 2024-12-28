@@ -3,11 +3,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Product {
-    pub _id: ObjectId,
-    pub name: String,
-    pub price: String,
+    pub _id: Option<ObjectId>,
+    pub title: String,
+    pub price: f64,
     pub gender: String,
-    pub size: Vec<String>,
+    pub sizes: Vec<String>,
     pub colors: Vec<String>,
     pub product_type: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ProductIdQuery {
+    pub product_id: String,
 }

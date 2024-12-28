@@ -54,8 +54,8 @@ def get_data(gender):
         driver.get(url)
 
         # Sleep in case of CAPTCHA solving
-        # time.sleep(40)
-        time.sleep(3)
+        time.sleep(40)
+        # time.sleep(3)
 
         make_page_load()
         print(f"Fetching all links on page for current gender ({gender})...")
@@ -68,7 +68,11 @@ def get_data(gender):
             soup = BeautifulSoup(driver.page_source, "html.parser")
 
             title = soup.select_one("h1.b-product_details-name").text.strip()
-            price = soup.select_one("div.b-price span.b-price-item").text.strip()
+            price = float(
+                soup.select_one("div.b-price span.b-price-item")
+                .text.strip()[1:]
+                .replace(",", "")
+            )
             static_image_url = soup.select_one("#product-image-0")["src"]
             sizes = [
                 size.text.strip()
@@ -83,7 +87,7 @@ def get_data(gender):
             )[2].text.strip()
 
             colors = [
-                color.get("title")
+                color.get("title").strip()
                 for color in soup.select("button.b-variation_swatch.m-swatch")
             ]
 

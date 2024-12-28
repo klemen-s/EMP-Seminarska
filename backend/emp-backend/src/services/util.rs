@@ -17,7 +17,7 @@ pub fn extract_and_verify_token(
 ) -> Result<BTreeMap<String, String>, HttpResponse> {
     let auth_header = req.headers().get("Authorization");
     if auth_header.is_none() {
-        return Err(HttpResponse::Unauthorized().body("Missing Authorization header..."));
+        return Err(HttpResponse::Unauthorized().body("Missing Authorization header... (Not logged in)"));
     }
 
     let auth_header = auth_header
