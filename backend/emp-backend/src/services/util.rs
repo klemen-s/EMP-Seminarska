@@ -17,28 +17,28 @@ pub fn extract_and_verify_token(
 ) -> Result<BTreeMap<String, String>, HttpResponse> {
     let auth_header = req.headers().get("Authorization");
     if auth_header.is_none() {
-        return Err(HttpResponse::Unauthorized().body("Missing Authorization header... (Not logged in)"));
+        return Err(HttpResponse::Unauthorized().json("Missing Authorization header... (Not logged in)"));
     }
 
     let auth_header = auth_header
         .unwrap()
         .to_str()
-        .map_err(|_| HttpResponse::Unauthorized().body("Invalid Authorization header format..."))?;
+        .map_err(|_| HttpResponse::Unauthorized().json("Invalid Authorization header format..."))?;
 
     if !auth_header.starts_with("Bearer ") {
-        return Err(HttpResponse::Unauthorized().body("Invalid Authorization header format..."));
+        return Err(HttpResponse::Unauthorized().json("Invalid Authorization header format..."));
     }
 
     let token = &auth_header[7..];
 
     // Verify the token
     let key: Hmac<Sha256> = Hmac::new_from_slice(b"nooneisgonnalookatthis").map_err(|e| {
-        HttpResponse::InternalServerError().body(format!("Error creating HMAC key: {}", e))
+        HttpResponse::InternalServerError().json(format!("Error creating HMAC key: {}", e))
     })?;
 
     let claims: BTreeMap<String, String> = token
         .verify_with_key(&key)
-        .map_err(|e| HttpResponse::Unauthorized().body(format!("Invalid token: {}", e)))?;
+        .map_err(|e| HttpResponse::Unauthorized().json(format!("Invalid token: {}", e)))?;
 
     Ok(claims)
 }

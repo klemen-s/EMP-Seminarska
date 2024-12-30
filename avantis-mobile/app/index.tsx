@@ -1,9 +1,24 @@
-import React, { useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Image } from "react-native";
-import { Link } from 'expo-router';
+import { Link, useNavigation, Stack } from 'expo-router';
+import { AuthContext } from '@/context/AuthContext';
+import { getHeaderOptionsLoggedIn, getHeaderOptionsLoggedOut } from '@/components/navigation/NavbarSettings';
+
 
 export default function Index() {
+  const navigation = useNavigation();
+
   const [gender, setGender] = useState('men');
+  const auth = useContext(AuthContext);
+
+
+  useEffect(() => {
+    if (auth.userToken != null) {
+      navigation.setOptions({ ...getHeaderOptionsLoggedIn(navigation) });
+    } else {
+      navigation.setOptions({ ...getHeaderOptionsLoggedOut(navigation) });
+    }
+  }, [auth.userToken]);
 
   return (
     <View
@@ -14,11 +29,13 @@ export default function Index() {
         justifyContent: "center",
       }}
     >
+      <Stack
+        screenOptions={auth.userToken != null ? getHeaderOptionsLoggedIn(navigation) : getHeaderOptionsLoggedOut(navigation)} />
       <Image
         source={require('../assets/images/avantis-logo.png')}
         style={styles.logo}
       />
-      <Text style={styles.shopForText}>Shop for {gender.charAt(0).toUpperCase() + gender.slice(1)}</Text>
+      <Text style={styles.shopForText}>Shop for {gender.split(",").map((g) => g.charAt(0).toUpperCase() + g.slice(1)).join(" and ")}</Text>
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.genderButton, gender === 'men' && styles.selectedButton, styles.leftButton]}
@@ -39,12 +56,12 @@ export default function Index() {
           />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.genderButton, gender === 'other' && styles.selectedButton, styles.rightButton]}
-          onPress={() => setGender('other')}
+          style={[styles.genderButton, gender === 'men,women' && styles.selectedButton, styles.rightButton]}
+          onPress={() => setGender("men,women")}
         >
           <Image
             source={require('../assets/images/other-icon.png')}
-            style={[styles.icon, gender === 'other' && styles.selectedIcon]}
+            style={[styles.icon, gender === 'men,women' && styles.selectedIcon]}
           />
         </TouchableOpacity>
       </View>
@@ -52,6 +69,7 @@ export default function Index() {
         Go shop
       </Link>
     </View >
+
   );
 }
 

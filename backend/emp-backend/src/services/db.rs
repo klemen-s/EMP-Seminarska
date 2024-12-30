@@ -70,40 +70,63 @@ impl Database {
         Ok(result)
     }
 
-    pub async fn get_orders(&self, user_id: String) -> Result<Vec<Order>, WebError> {
-        let cursor = self
-            .order
-            .find(doc! {"user_id": ObjectId::parse_str(&user_id).expect("Failed to parse user_id")})
-            .await
-            .map_err(|e| {
-                return actix_web::error::ErrorInternalServerError(format!(
-                    "Error getting products: {}",
-                    e
-                ));
-            })?;
+    pub async fn get_orders(&self, user_id: String) -> Result<Vec<Document>, WebError> {
+        let parsed_user_id = ObjectId::parse_str(&user_id).expect("Failed to parse user_id");
+        let pipeline = vec![
+            doc! {
+                "$match": {
+                    "user_id": parsed_user_id
+                },
+            },
+            doc! {
+                "$lookup": {
+                    "from": "products",
+                    "localField": "order_items.product_id",
+                    "foreignField": "_id",
+                    "as": "product_details"
+                }
+            },
+        ];
 
-        let orders: Vec<Order> = cursor.try_collect().await.map_err(|e| {
+        let cursor = self.order.aggregate(pipeline).await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Error getting orders: {}", e))
+        })?;
+
+        let order_docs: Vec<Document> = cursor.try_collect().await.map_err(|e| {
             actix_web::error::ErrorInternalServerError(format!("Error collecting orders: {}", e))
         })?;
 
-        Ok(orders)
+        Ok(order_docs)
     }
 
-    pub async fn get_order(&self, order_id: String) -> Result<Order, WebError> {
-        let db_order: Option<Order> = self
-            .order
-            .find_one(doc! {
-                "_id": ObjectId::parse_str(order_id).expect("Failed to parse order_id"),
-            })
-            .await
-            .map_err(|e| {
-                return ErrorBadRequest(format!(
-                    "Problem querying database for user's order: {}",
-                    e
-                ));
-            })?;
+    pub async fn get_order(&self, order_id: String) -> Result<Document, WebError> {
+        let parsed_order_id = ObjectId::parse_str(&order_id).expect("Failed to parse order_id");
 
-        if let Some(order) = db_order {
+        let pipeline = vec![
+            doc! {
+                "$match": {
+                    "_id": parsed_order_id
+                }
+            },
+            doc! {
+                "$lookup": {
+                    "from": "products",
+                    "localField": "order_items.product_id",
+                    "foreignField": "_id",
+                    "as": "product_details"
+                }
+            },
+        ];
+
+        let mut cursor = self.order.aggregate(pipeline).await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Error getting order: {}", e))
+        })?;
+
+        let order_doc: Option<Document> = cursor.try_next().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!("Error collecting order: {}", e))
+        })?;
+
+        if let Some(order) = order_doc {
             return Ok(order);
         } else {
             return Err(ErrorBadRequest(format!(
@@ -488,10 +511,7 @@ impl Database {
     // Filter profile
     //////////////////////////////////////////////////////////////////////////////////////////
 
-    pub async fn db_get_filter_profiles(
-        &self,
-        user: UserId,
-    ) -> Result<Vec<UserFilter>, WebError> {
+    pub async fn db_get_filter_profiles(&self, user: UserId) -> Result<Vec<UserFilter>, WebError> {
         let cursor = self
             .user_filter
               .find(doc! {"user_id": ObjectId::parse_str(user.user_id).expect("Failed to parse user_id")})

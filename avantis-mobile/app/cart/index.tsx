@@ -1,102 +1,142 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, Text, TouchableOpacity, Image } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import ShoppingCartItem from '../../components/ShoppingCartItem';
+import React, { useState, useContext, useEffect } from 'react';
+import { View, FlatList, Text, TouchableOpacity } from 'react-native';
+import ShoppingCartItem from '@/components/ShoppingCartItem';
+import { useNavigation, useRouter, Stack } from 'expo-router';
+import { ObjectId } from "bson";
+import { getItemAsync } from "expo-secure-store";
+import { getHeaderOptionsLoggedIn, getHeaderOptionsLoggedOut } from '@/components/navigation/NavbarSettings';
+import { CartContext, CartDispatchContext } from '@/context/CartContext';
+import { AuthContext } from '@/context/AuthContext';
+
 
 export default function CartScreen() {
-  const [cartItems, setCartItems] = useState([]);
+  const router = useRouter();
+  const navigation = useNavigation();
+
+  const cart = useContext(CartContext);
+  const cartDispatch = useContext(CartDispatchContext);
+  const auth = useContext(AuthContext);
+
+  const [checkoutError, setCheckoutError] = useState(false);
+  const [isCartEmpty, setIsCartEmpty] = useState(true);
 
 
-  // Fetch cart items from AsyncStorage
-  useEffect(() => {
-    const fetchCartItems = async () => {
-      try {
-        const storedCart = await AsyncStorage.getItem('cart');
-        if (storedCart) {
-          setCartItems(JSON.parse(storedCart));
-        }
-      } catch (error) {
-        console.error('Error fetching cart items:', error);
-      }
-    };
-
-    fetchCartItems();
-  }, []);
-
-  const handleUpdateQuantity = async (id: string, selectedSize: string, operation: 'increase' | 'decrease') => {
-    setCartItems((prevItems) => {
-      const updatedCart = prevItems.map((item) =>
-        item.id === id && item.selectedSize === selectedSize
-          ? {
-              ...item,
-              quantity:
-                operation === 'increase'
-                  ? item.quantity + 1
-                  : item.quantity > 1
-                  ? item.quantity - 1
-                  : item.quantity,
-            }
-          : item
-      );
-      updateCartStorage(updatedCart);
-      return updatedCart;
-    });
-  };
-
-  const handleRemoveItem = async (id: string, selectedSize: string) => {
-    setCartItems((prevItems) => {
-      const updatedCart = prevItems.filter((item) => !(item.id === id && item.selectedSize === selectedSize));
-      updateCartStorage(updatedCart);
-      return updatedCart;
-    });
-  };
-
-  const updateCartStorage = async (updatedCart: any[]) => {
-    try {
-      await AsyncStorage.setItem('cart', JSON.stringify(updatedCart));
-    } catch (error) {
-      console.error('Error updating cart in AsyncStorage:', error);
+  async function handleCheckout() {
+    if (cart.items.length === 0) {
+      setCheckoutError(true);
+    } else {
+      setCheckoutError(false);
     }
-  };
 
-  const calculateTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + parseFloat(item.price.replace('$', '')) * item.quantity, 0).toFixed(2);
-  };
+    try {
+
+      let userId = await getItemAsync("userId");
+      let jwt = await getItemAsync("userToken");
+
+      if (cartDispatch) {
+        const order_items = cart.items.map((item) => {
+          return {
+            size: item.size,
+            quantity: item.quantity,
+            color: item.color,
+            product_id: new ObjectId(item.id)
+          }
+
+        })
+        const res = await fetch("http://localhost:5001/order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${jwt}`,
+          },
+          body: JSON.stringify({
+            user_id: new ObjectId(userId!), order_items: order_items
+          }),
+        });
+
+
+        await res.json();
+
+        cartDispatch({ type: "CHECKOUT" });
+        router.replace("/profile/orders");
+      }
+    } catch (error) {
+      setCheckoutError(true);
+    }
+  }
+
+  useEffect(() => {
+    if (cart.items.length === 0) setIsCartEmpty(true);
+    else setIsCartEmpty(false);
+
+    if (auth.userToken != null) {
+      navigation.setOptions({ ...getHeaderOptionsLoggedIn(navigation) });
+    } else {
+      navigation.setOptions({ ...getHeaderOptionsLoggedOut(navigation) });
+    }
+  }, [cart, auth.userToken]);
 
   return (
+
     <View style={{ flex: 1 }}>
-      <FlatList
-        data={cartItems}
-        keyExtractor={(item) => `${item.id}-${item.selectedSize}`} // Use combination of id and selectedSize as key
-        renderItem={({ item }) => (
-          <ShoppingCartItem
-            productName={item.productName}
-            imageUrl={item.imageUrl}
-            price={item.price}
-            id={item.id}
-            quantity={item.quantity}
-            selectedSize={item.selectedSize} // Pass the selected size
-            onRemove={(id, selectedSize) => handleRemoveItem(id, selectedSize)}
-            onIncrease={(id, selectedSize) => handleUpdateQuantity(id, selectedSize, 'increase')}
-            onDecrease={(id, selectedSize) => handleUpdateQuantity(id, selectedSize, 'decrease')}
-          />
-        )}
-      />
+      <Stack
+        screenOptions={auth.userToken != null ? getHeaderOptionsLoggedIn(navigation) : getHeaderOptionsLoggedOut(navigation)} />
+      {!isCartEmpty && (
+        <FlatList
+          data={cart.items}
+          keyExtractor={(item) => `${item.id}-${item.size}-${item.color}`}
+          renderItem={({ item }) => (
+            <ShoppingCartItem
+              id={item.id}
+              productName={item.name}
+              imageUrl={item.imageUrl}
+              price={item.price}
+              quantity={item.quantity}
+              size={item.size}
+              color={item.color}
+            />
+          )}
+        />)}
+      {isCartEmpty && (
+        <View
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text>Cart is empty.</Text>
+        </View>
+      )}
       <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: '#ccc', backgroundColor: '#f9f9f9', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ fontSize: 20, fontWeight: 'bold' }}>
-          Total Price: {calculateTotalPrice()} €
+          Total Price: {cart.totalAmount} €
         </Text>
-        <TouchableOpacity
+        {checkoutError && (
+          <Text
+            style={{
+              textAlign: "left",
+              width: 250,
+              marginVertical: 5,
+              color: "red",
+            }}
+          >
+            An error occured, please try again.
+          </Text>
+        )}
+        {!isCartEmpty && <TouchableOpacity
           style={{
             backgroundColor: '#000',
             paddingVertical: 10,
             paddingHorizontal: 20,
             borderRadius: 5,
           }}
-          onPress={() => alert('Proceed to Checkout')}
+          onPress={handleCheckout}
         >
           <Text style={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}>Checkout</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
       </View>
     </View>
   );

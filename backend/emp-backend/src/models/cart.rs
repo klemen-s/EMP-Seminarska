@@ -19,6 +19,7 @@ pub struct AddCartItems {
 pub struct CartItem {
     pub size: String,
     pub quantity: u32,
+    pub color: String,
     pub product_id: ObjectId,
 }
 

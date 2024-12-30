@@ -12,7 +12,7 @@ use services::db::Database;
 
 #[get("/")]
 async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello!")
+    HttpResponse::Ok().json("Hello!")
 }
 
 #[actix_web::main]

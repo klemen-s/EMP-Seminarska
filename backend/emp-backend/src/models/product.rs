@@ -6,6 +6,7 @@ pub struct Product {
     pub _id: Option<ObjectId>,
     pub title: String,
     pub price: f64,
+    pub url: String,
     pub gender: String,
     pub sizes: Vec<String>,
     pub colors: Vec<String>,

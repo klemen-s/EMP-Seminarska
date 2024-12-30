@@ -16,9 +16,9 @@ pub async fn get_products_by_filter(db: Data<Database>, filter: Json<Filter>) ->
         Ok(product) => HttpResponse::Ok().json(product),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }
@@ -30,9 +30,9 @@ pub async fn get_product(db: Data<Database>, query_param: Query<ProductIdQuery>)
         Ok(product) => HttpResponse::Ok().json(product),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }

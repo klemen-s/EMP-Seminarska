@@ -1,11 +1,13 @@
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
 
+use super::cart::CartItem;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Order {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub _id: Option<ObjectId>,
-    pub order_items: Vec<ObjectId>,
+    pub order_items: Vec<CartItem>,
     pub user_id: ObjectId,
 }
 

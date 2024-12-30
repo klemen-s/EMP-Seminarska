@@ -2,16 +2,10 @@ import React from 'react';
 import { Image, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 
-interface ProductProps {
-    productName: string;
-    imageUrl: string;
-    id: string;
-    price: string;
-    marginTop?: number
-}
+import { ProductProps } from '@/types';
 
 // This is displayed on "product" page...
-export default function Product({ productName, imageUrl, id, price, marginTop}: ProductProps) {
+export default function Product({ productName, imageUrl, id, price, marginTop }: ProductProps) {
     return (
         <View
             style={{
@@ -40,7 +34,7 @@ export default function Product({ productName, imageUrl, id, price, marginTop}: 
                 }}
             >
                 <Text style={{ fontSize: 25, fontWeight: '600' }}>{productName}</Text>
-                <Text style={{ fontSize: 20, marginTop: 5 }}>{price}</Text>
+                <Text style={{ fontSize: 20, marginTop: 5 }}>{price}€</Text>
             </View>
             <Link
                 href={`/products/${id}`}

@@ -26,9 +26,9 @@ pub async fn get_user_orders(
         Ok(orders) => HttpResponse::Ok().json(orders),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }
@@ -49,9 +49,9 @@ pub async fn get_user_order(
         Ok(order) => HttpResponse::Ok().json(order),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }
@@ -72,9 +72,9 @@ pub async fn post_user_order(
         Ok(_) => HttpResponse::Ok().json("New order created..."),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }

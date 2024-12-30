@@ -16,9 +16,9 @@ pub async fn register(db: Data<Database>, user: Json<CreateUser>) -> HttpRespons
         Ok(user) => user,
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                return HttpResponse::BadRequest().body(err.to_string());
+                return HttpResponse::BadRequest().json(err.to_string());
             } else {
-                return HttpResponse::InternalServerError().body(err.to_string());
+                return HttpResponse::InternalServerError().json(err.to_string());
             }
         }
     };
@@ -28,17 +28,17 @@ pub async fn register(db: Data<Database>, user: Json<CreateUser>) -> HttpRespons
         Bson::ObjectId(oid) => oid,
         _ => {
             return HttpResponse::InternalServerError()
-                .body("Failed to convert inserted_id to ObjectId")
+                .json("Failed to convert inserted_id to ObjectId")
         }
     };
     let cart = db.create_cart(insert_id).await;
     match cart {
-        Ok(_) => HttpResponse::Ok().body("New user and user's cart created..."),
+        Ok(_) => HttpResponse::Ok().json("New user and user's cart created..."),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                return HttpResponse::BadRequest().body(err.to_string());
+                return HttpResponse::BadRequest().json(err.to_string());
             } else {
-                return HttpResponse::InternalServerError().body(err.to_string());
+                return HttpResponse::InternalServerError().json(err.to_string());
             }
         }
     }
@@ -47,12 +47,12 @@ pub async fn register(db: Data<Database>, user: Json<CreateUser>) -> HttpRespons
 #[post("/login")]
 pub async fn login(db: Data<Database>, user: Json<LoginUser>) -> HttpResponse {
     match db.login_user(user.into_inner()).await {
-        Ok(_) => HttpResponse::Ok().json("Logged in..."),
+        Ok(jwt) => HttpResponse::Ok().json(jwt),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }
@@ -75,7 +75,7 @@ pub async fn delete_user(
         Ok(_) => (),
         Err(err) => {
             return HttpResponse::InternalServerError()
-                .body(format!("Could not delete user cart: {}", err))
+                .json(format!("Could not delete user cart: {}", err))
         }
     };
 
@@ -83,9 +83,9 @@ pub async fn delete_user(
         Ok(_) => HttpResponse::Ok().json("User and cart deleted..."),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }

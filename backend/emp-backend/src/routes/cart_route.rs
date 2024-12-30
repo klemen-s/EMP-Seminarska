@@ -25,9 +25,9 @@ pub async fn add_cart_item(
         Ok(_) => HttpResponse::Ok().json("Items added to cart..."),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }
@@ -48,9 +48,9 @@ pub async fn remove_cart_item(
         Ok(_) => HttpResponse::Ok().json("Items quantity decreased or item removed from cart..."),
         Err(err) => {
             if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
-                HttpResponse::BadRequest().body(err.to_string())
+                HttpResponse::BadRequest().json(err.to_string())
             } else {
-                HttpResponse::InternalServerError().body(err.to_string())
+                HttpResponse::InternalServerError().json(err.to_string())
             }
         }
     }
