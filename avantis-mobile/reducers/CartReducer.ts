@@ -45,6 +45,10 @@ export function cartReducer(state: CartState, action: CartAction): CartState {
         case "CHECKOUT": {
             return { items: [], totalAmount: 0 };
         }
+        case "DB_FETCH": {
+            const newTotalAmount = action.products!.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+            return { items: action.products!, totalAmount: newTotalAmount }
+        }
         default: {
             throw new Error("Unknown action: " + action.type);
         }

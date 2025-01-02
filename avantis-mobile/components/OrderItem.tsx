@@ -5,7 +5,7 @@ export default function OrderItem({ order }) {
     return (
         <View style={{ marginVertical: 30, minHeight: 150 }}>
             <Text style={{ marginBottom: 10, fontWeight: 500 }}>
-                Order Id: {order._id}
+                Order Id: {order.order_id}
             </Text>
             <FlatList
                 data={order.orderItems}
@@ -42,14 +42,16 @@ export default function OrderItem({ order }) {
                                 </Text>
                                 <Text style={{ fontSize: 12 }}>Quantity: {item.quantity}</Text>
                                 <Text style={{ fontSize: 12 }}>Size: {item.size}</Text>
-                                <Text style={{ fontSize: 12 }}>Price: £{item.price}</Text>
+                                <Text style={{ fontSize: 12 }}>Price: {item.price}€</Text>
                             </View>
                         </View>
                     );
                 }}
-                style={{ marginBottom: 30 }}
+                style={{ marginBottom: 15 }}
                 keyExtractor={(item, index) => index}
             />
+            <Text style={{ fontSize: 18, fontWeight: "bold" }}>Total: {order.totalAmount}€</Text>
+
         </View>
     );
 }

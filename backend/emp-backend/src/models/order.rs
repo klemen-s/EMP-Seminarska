@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::cart::CartItem;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Order {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub _id: Option<ObjectId>,

@@ -3,6 +3,8 @@ import { Image, Text, View, TouchableOpacity } from 'react-native';
 
 import { ShoppingCartItemProps } from '@/types';
 import { CartDispatchContext } from '@/context/CartContext';
+import { getItemAsync } from 'expo-secure-store';
+import { ObjectId } from 'bson';
 
 // This is displayed in the shopping cart...
 export default function ShoppingCartItem({
@@ -16,13 +18,57 @@ export default function ShoppingCartItem({
 }: ShoppingCartItemProps) {
     const cartDispatch = useContext(CartDispatchContext);
 
-    function handleRemoveItem() {
-        if (cartDispatch) {
-            cartDispatch({ type: "REMOVE", product: { id: id, size: size, color: color } })
+    async function handleRemoveItem() {
+        try {
+            if (cartDispatch) {
+                const userId = await getItemAsync("userId");
+                const jwt = await getItemAsync("userToken");
+
+                if (userId == null || jwt == null) {
+                    alert("Not logged in...");
+                    return;
+                }
+
+
+                const removeProduct = {
+                    size: size,
+                    quantity: quantity,
+                    color: color,
+                    product_id: new ObjectId(id),
+                }
+
+
+                const res = await fetch("http://localhost:5001/cart", {
+                    method: "DELETE",
+                    body: JSON.stringify({
+                        "user_id": new ObjectId(userId),
+                        "products": [removeProduct]
+                    }),
+                    headers: {
+                        "Authorization": `Bearer ${jwt}`,
+                        "Content-Type": "application/json",
+                    }
+                });
+
+
+                if (res.ok) {
+                    alert(`Item removed from to cart!`)
+                } else {
+                    const data = await res.json();
+                    throw new Error(`Item could not be removed: ${data}`)
+                }
+
+                cartDispatch({ type: "REMOVE", product: { id: id, size: size, color: color } })
+            }
+            else {
+                alert("Internal problem: Could not remove item...")
+            };
+        } catch (error) {
+            console.error(error);
+            alert(`Something went wrong while removing the item: ${error}`);
+
         }
-        else {
-            alert("Internal problem: Could not remove item...")
-        };
+
     }
 
 

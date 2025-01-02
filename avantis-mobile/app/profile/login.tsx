@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { setItemAsync } from "expo-secure-store";
 import { AuthContext, AuthDispatchContext } from "@/context/AuthContext";
-import { useNavigation, useRouter, Stack } from "expo-router";
+import { useNavigation, useRouter, Stack, Link } from "expo-router";
 import { jwtDecode } from "jwt-decode";
 import { getHeaderOptionsLoggedIn, getHeaderOptionsLoggedOut } from '@/components/navigation/NavbarSettings';
 
@@ -44,7 +44,6 @@ export default function LoginScreen() {
 
         if (!res.ok) {
           const data = await res.json();
-
           throw new Error(`Network error: ${data}`);
         }
 
@@ -108,6 +107,9 @@ export default function LoginScreen() {
       ) : (
         ""
       )}
+      <Text style={{ marginTop: 15 }}>No account yet?
+        <Link style={{ color: "blue" }} href="/profile/register"> Sign up</Link>
+      </Text>
     </View>
   );
 }

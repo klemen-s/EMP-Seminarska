@@ -1,8 +1,10 @@
 use crate::models::cart::AddCartItems;
 use crate::models::cart::Cart;
 use crate::models::cart::CartItem;
+use crate::models::cart::ContextCartItem;
 use crate::models::filters::Filter;
 use crate::models::filters::FilterId;
+use crate::models::filters::FilterOptions;
 use crate::models::filters::UserFilter;
 use crate::models::order::Order;
 use crate::models::product::Product;
@@ -19,11 +21,10 @@ use chrono::{Duration, Utc};
 use futures_util::TryStreamExt;
 use hmac::{Hmac, Mac};
 use jwt::SignWithKey;
-use mongodb::results::UpdateResult;
-use mongodb::results::{DeleteResult, InsertOneResult};
+use mongodb::results::{DeleteResult, InsertOneResult, UpdateResult};
 use mongodb::{Client, Collection};
 use sha2::Sha256;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 const DEFAULT_MAX_PRICE: f64 = f64::MAX;
 
@@ -59,13 +60,29 @@ impl Database {
     //////////////////////////////////////////////////////////////////////////////////////////
     // Order
     //////////////////////////////////////////////////////////////////////////////////////////
-    pub async fn create_order(&self, order: Order) -> Result<InsertOneResult, WebError> {
-        let result = self.order.insert_one(order).await.map_err(|e| {
+    pub async fn create_order(&self, order: Order) -> Result<UpdateResult, WebError> {
+        self.order.insert_one(&order).await.map_err(|e| {
             return actix_web::error::ErrorInternalServerError(format!(
                 "Error creating order: {}",
                 e
             ));
         })?;
+
+        let clear_cart = self.clear_cart(order.user_id).await?;
+        Ok(clear_cart)
+    }
+
+    pub async fn clear_cart(&self, user_id: ObjectId) -> Result<UpdateResult, WebError> {
+        let result = self
+            .cart
+            .update_one(doc! {"user_id": user_id}, doc! {"$set": {"products": []}})
+            .await
+            .map_err(|e| {
+                return actix_web::error::ErrorInternalServerError(format!(
+                    "Error clearing cart: {}",
+                    e
+                ));
+            })?;
 
         Ok(result)
     }
@@ -180,12 +197,12 @@ impl Database {
             query.insert("sizes", doc! { "$in": &filter.sizes });
         }
 
-        if !filter.product_type.is_empty() {
-            query.insert("product_type", &filter.product_type);
+        if !filter.product_types.is_empty() {
+            query.insert("product_type", doc! {"$in": &filter.product_types});
         }
 
-        if !filter.gender.is_empty() {
-            query.insert("gender", doc! { "$in": &filter.gender });
+        if !filter.genders.is_empty() {
+            query.insert("gender", doc! { "$in": &filter.genders });
         }
 
         let cursor = self.product.find(query).await.map_err(|e| {
@@ -336,6 +353,51 @@ impl Database {
     //////////////////////////////////////////////////////////////////////////////////////////
     // Cart
     //////////////////////////////////////////////////////////////////////////////////////////
+    pub async fn fetch_cart(&self, user_id: String) -> Result<Vec<ContextCartItem>, WebError> {
+        let cart: Option<Cart> = self
+            .cart
+            .find_one(doc! {"user_id": ObjectId::parse_str(user_id.clone()).expect("Failed to parse user_id")})
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!(
+                    "Error getting cart for user {}. Error: {}",
+                    user_id, e
+                ))
+            })?;
+
+        if let Some(cart_doc) = cart {
+            let mut products_data = Vec::new();
+            for item in cart_doc.products {
+                if let Some(product) = self
+                    .product
+                    .find_one(doc! {"_id": item.product_id})
+                    .await
+                    .map_err(|e| {
+                        ErrorInternalServerError(format!(
+                            "Error getting product {}. Error: {}",
+                            item.product_id, e
+                        ))
+                    })?
+                {
+                    let cart_item: ContextCartItem = ContextCartItem {
+                        size: item.size,
+                        quantity: item.quantity,
+                        color: item.color,
+                        image_url: product.url,
+                        price: product.price,
+                        product_id: product._id.unwrap(),
+                    };
+
+                    products_data.push(cart_item);
+                }
+            }
+
+            return Ok(products_data);
+        }
+
+        Err(ErrorBadRequest("Could not find cart for user..."))
+    }
+
     pub async fn create_cart(&self, user_id: ObjectId) -> Result<(), WebError> {
         let query = self
             .cart
@@ -377,7 +439,8 @@ impl Database {
                         "products": {
                             "$elemMatch": {
                                 "product_id": &product.product_id,
-                                "size": &product.size
+                                "size": &product.size,
+                                "color": &product.color
                             }
                         }
                     },
@@ -393,34 +456,38 @@ impl Database {
                 Ok(update_result) => {
                     last_update_result = Some(update_result.clone());
                     if update_result.matched_count == 0 {
-                        // if no matching product was found, push new product
-                        self.cart
+                        let query = self
+                            .cart
                             .update_one(
-                                doc! {"user_id": &user_id},
-                                doc! {"$push": {"products": product}},
+                                doc! {
+                                    "user_id": &user_id
+                                },
+                                doc! {
+                                    "$push": {
+                                        "products": {
+                                            "product_id": &product.product_id,
+                                            "size": &product.size,
+                                            "color": &product.color,
+                                            "quantity": product.quantity
+                                        }
+                                    }
+                                },
                             )
-                            .await
-                            .map_err(|e| {
-                                ErrorInternalServerError(format!(
-                                    "Error pushing product to cart: {}",
-                                    e
-                                ))
-                            })?;
+                            .await;
+
+                        match query {
+                            Ok(update_result) => {
+                                last_update_result = Some(update_result);
+                            }
+                            Err(err) => return Err(ErrorInternalServerError(err)),
+                        }
                     }
                 }
-                Err(err) => {
-                    return Err(ErrorInternalServerError(format!(
-                        "Error updating product in cart: {}",
-                        err
-                    )))
-                }
+                Err(err) => return Err(ErrorInternalServerError(err)),
             }
         }
 
-        match last_update_result {
-            Some(result) => Ok(result),
-            None => Err(ErrorInternalServerError("No updates were performed")),
-        }
+        last_update_result.ok_or_else(|| ErrorInternalServerError("No update performed"))
     }
 
     pub async fn delete_cart_item(&self, data: AddCartItems) -> Result<UpdateResult, WebError> {
@@ -434,7 +501,9 @@ impl Database {
                 "products": {
                     "$elemMatch": {
                         "product_id": &product.product_id,
-                        "size": &product.size
+                        "size": &product.size,
+                        "color": &product.color,
+                        "quantity": &product.quantity
                     }
                 }
             })
@@ -450,7 +519,12 @@ impl Database {
             let products: Vec<CartItem> = cart_doc.products;
             let matching_products: Vec<CartItem> = products
                 .into_iter()
-                .filter(|p| (p.product_id == product.product_id) && (p.size == product.size))
+                .filter(|p| {
+                    (p.product_id == product.product_id)
+                        && (p.size == product.size)
+                        && (p.quantity == product.quantity)
+                        && (p.color == product.color)
+                })
                 .collect();
 
             let p = &matching_products[0];
@@ -463,7 +537,7 @@ impl Database {
                         doc! {
                             "user_id": user_id
                         },
-                        doc! {"$pull": {"products": {"product_id": p.product_id, "quantity": p.quantity}}},
+                        doc! {"$pull": {"products": {"product_id": p.product_id, "quantity": p.quantity, "size": p.size.clone(),  "color": p.color.clone()}}},
                     )
                     .await;
 
@@ -481,7 +555,8 @@ impl Database {
                         doc! {
                             "user_id": &user_id,
                             "products.product_id": &product.product_id,
-                            "products.size": &product.size
+                            "products.size": &product.size,
+                            "products.color": &product.color.clone()
                         },
                         doc! {
                             "$set": {
@@ -510,6 +585,96 @@ impl Database {
     //////////////////////////////////////////////////////////////////////////////////////////
     // Filter profile
     //////////////////////////////////////////////////////////////////////////////////////////
+    pub async fn get_filter_options(&self) -> Result<FilterOptions, WebError> {
+        let mut filter_sizes: HashSet<String> = HashSet::new();
+        let mut filter_colors: HashSet<String> = HashSet::new();
+        let mut filter_product_types: HashSet<String> = HashSet::new();
+
+        let cursor = self.product.find(doc! {}).await.map_err(|e| {
+            return actix_web::error::ErrorInternalServerError(format!(
+                "Error getting user filter profiles: {}",
+                e
+            ));
+        })?;
+
+        let products: Vec<Product> = cursor.try_collect().await.map_err(|e| {
+            actix_web::error::ErrorInternalServerError(format!(
+                "Error collecting user filter profiles: {}",
+                e
+            ))
+        })?;
+
+        for product in products {
+            product.sizes.into_iter().for_each(|size| {
+                filter_sizes.insert(size.to_string());
+            });
+
+            product.colors.into_iter().for_each(|color| {
+                filter_colors.insert(color.to_string());
+            });
+
+            filter_product_types.insert(product.product_type.to_string());
+        }
+
+        let max_price = self.get_product_with_highest_price().await?.price;
+        let min_price = self.get_product_with_lowest_price().await?.price;
+        let mut genders = Vec::new();
+        genders.push("men".to_string());
+        genders.push("women".to_string());
+
+        Ok(FilterOptions {
+            colors: filter_colors,
+            min_price,
+            max_price,
+            sizes: filter_sizes,
+            product_types: filter_product_types,
+            gender: genders,
+        })
+    }
+
+    pub async fn get_product_with_highest_price(&self) -> Result<Product, WebError> {
+        let product = self
+            .product
+            .find_one(doc! {})
+            .sort(doc! {"price": -1})
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!(
+                    "Error getting product with lowest price: {}",
+                    e
+                ))
+            })?;
+
+        if let Some(highest_price_product) = product {
+            Ok(highest_price_product)
+        } else {
+            Err(ErrorInternalServerError(
+                "Could not get product with lowest price...",
+            ))
+        }
+    }
+
+    pub async fn get_product_with_lowest_price(&self) -> Result<Product, WebError> {
+        let product = self
+            .product
+            .find_one(doc! {})
+            .sort(doc! {"price": 1})
+            .await
+            .map_err(|e| {
+                actix_web::error::ErrorInternalServerError(format!(
+                    "Error getting product with lowest price: {}",
+                    e
+                ))
+            })?;
+
+        if let Some(lowest_price_product) = product {
+            Ok(lowest_price_product)
+        } else {
+            Err(ErrorInternalServerError(
+                "Could not get product with lowest price...",
+            ))
+        }
+    }
 
     pub async fn db_get_filter_profiles(&self, user: UserId) -> Result<Vec<UserFilter>, WebError> {
         let cursor = self

@@ -80,3 +80,20 @@ pub async fn delete_user_filter_profile(
         }
     }
 }
+
+#[get("/filter")]
+pub async fn filter(
+    db: Data<Database>,
+
+) -> HttpResponse {
+    match db.get_filter_options().await {
+        Ok(filters) => HttpResponse::Ok().json(filters),
+        Err(err) => {
+            if err.as_response_error().status_code() == StatusCode::BAD_REQUEST {
+                HttpResponse::BadRequest().json(err.to_string())
+            } else {
+                HttpResponse::InternalServerError().json(err.to_string())
+            }
+        }
+    }
+}

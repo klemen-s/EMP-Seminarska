@@ -1,6 +1,6 @@
 use mongodb::bson::oid::ObjectId;
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::{collections::HashSet, fmt::Display};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Filter {
@@ -10,15 +10,15 @@ pub struct Filter {
     pub colors: Vec<String>,
     #[serde(default)]
     pub sizes: Vec<String>,
-    pub product_type: String,
+    pub product_types: Vec<String>,
     #[serde(default)]
-    pub gender: Vec<String>,
+    pub genders: Vec<String>,
 }
 
 impl Display for Filter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "UserFilter {{ min_price: {:?}, max_price: {:?}, colors: {:?}, sizes: {:?}, product_type: {:?}, gender: {:?} }}",
-           self.min_price, self.max_price, self.colors, self.sizes, self.product_type, self.gender)
+           self.min_price, self.max_price, self.colors, self.sizes, self.product_types, self.genders)
     }
 }
 
@@ -41,4 +41,17 @@ pub struct UserFilter {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct FilterId {
     pub filter_id: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct FilterOptions {
+    pub min_price: f64,
+    pub max_price: f64,
+    #[serde(default)]
+    pub colors: HashSet<String>,
+    #[serde(default)]
+    pub sizes: HashSet<String>,
+    pub product_types: HashSet<String>,
+    #[serde(default)]
+    pub gender: Vec<String>,
 }

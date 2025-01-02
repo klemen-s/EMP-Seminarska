@@ -53,6 +53,7 @@ interface CartState {
 interface CartAction {
     type: string;
     product?: any;
+    products?: any[]
 }
 
 interface CartProviderProps {

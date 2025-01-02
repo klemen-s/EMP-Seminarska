@@ -15,7 +15,7 @@ pub struct AddCartItems {
     pub user_id: ObjectId,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CartItem {
     pub size: String,
     pub quantity: u32,
@@ -31,4 +31,16 @@ impl Into<Bson> for CartItem {
         doc.insert("product_id", self.product_id);
         Bson::Document(doc)
     }
+}
+
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ContextCartItem {
+    pub size: String,
+    pub quantity: u32,
+    pub color: String,
+    #[serde(rename(serialize = "imageUrl", deserialize = "image_url"))]
+    pub image_url: String,
+    pub price: f64,
+    pub product_id: ObjectId,
 }

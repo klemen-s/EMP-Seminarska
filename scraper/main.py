@@ -54,8 +54,8 @@ def get_data(gender):
         driver.get(url)
 
         # Sleep in case of CAPTCHA solving
-        time.sleep(40)
-        # time.sleep(3)
+        # time.sleep(40)
+        time.sleep(3)
 
         make_page_load()
         print(f"Fetching all links on page for current gender ({gender})...")

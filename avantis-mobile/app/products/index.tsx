@@ -12,6 +12,7 @@ export default function ProductsScreen() {
     const navigation = useNavigation();
     const { gender } = useLocalSearchParams<{ gender: string }>()
 
+
     const auth = useContext(AuthContext);
     const [products, setProducts] = useState<ProductType[]>([]);
 
@@ -28,8 +29,8 @@ export default function ProductsScreen() {
                         "max_price": 0,
                         "colors": [],
                         "sizes": [],
-                        "product_type": "",
-                        "gender": gender.split(",").map(g => g),
+                        "product_types": [],
+                        "genders": gender.split(",").map(g => g),
                     })
                 });
 
@@ -40,7 +41,7 @@ export default function ProductsScreen() {
                     id: product._id.$oid,
                     price: product.price,
                     productName: product.title,
-                    imageUrl: product.url || 'default-image-url',
+                    imageUrl: product.url,
                     sizes: product.sizes,
                     productType: product.product_type,
                     colors: product.colors,
@@ -63,29 +64,32 @@ export default function ProductsScreen() {
     }, [gender, auth.userToken]);
 
     return (
-        <FlatList
-            data={products}
-            renderItem={function ({ item: product, index }) {
-                if (index === 0) {
+        <>
+            <Stack
+                screenOptions={auth.userToken != null ? getHeaderOptionsLoggedIn(navigation) : getHeaderOptionsLoggedOut(navigation)} />
+
+            <FlatList
+                data={products}
+                renderItem={function ({ item: product, index }) {
+                    if (index === 0) {
+                        return <Product
+                            productName={product.productName}
+                            imageUrl={product.imageUrl}
+                            price={product.price}
+                            id={product.id}
+                            marginTop={0}
+                        />
+                    }
+
+
                     return <Product
                         productName={product.productName}
                         imageUrl={product.imageUrl}
                         price={product.price}
                         id={product.id}
-                        marginTop={0}
                     />
-                }
-                <Stack
-                    screenOptions={auth.userToken != null ? getHeaderOptionsLoggedIn(navigation) : getHeaderOptionsLoggedOut(navigation)} />
-
-
-                return <Product
-                    productName={product.productName}
-                    imageUrl={product.imageUrl}
-                    price={product.price}
-                    id={product.id}
-                />
-            }}
-        />
+                }}
+            />
+        </>
     );
 }

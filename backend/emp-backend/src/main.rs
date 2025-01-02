@@ -3,8 +3,10 @@ mod routes;
 mod services;
 
 use actix_web::{get, web::Data, App, HttpResponse, HttpServer, Responder};
-use routes::cart_route::{add_cart_item, remove_cart_item};
-use routes::filter_route::{get_user_filter_profiles,create_user_filter_profile, delete_user_filter_profile};
+use routes::cart_route::{add_cart_item, fetch_cart, remove_cart_item};
+use routes::filter_route::{
+    create_user_filter_profile, delete_user_filter_profile, filter, get_user_filter_profiles,
+};
 use routes::order_route::{get_user_order, get_user_orders, post_user_order};
 use routes::product_route::{get_product, get_products_by_filter};
 use routes::user_route::{delete_user, login, register};
@@ -34,8 +36,10 @@ async fn main() -> std::io::Result<()> {
             .service(get_user_orders)
             .service(get_user_order)
             .service(post_user_order)
+            .service(fetch_cart)
             .service(add_cart_item)
             .service(remove_cart_item)
+            .service(filter)
             .service(get_user_filter_profiles)
             .service(create_user_filter_profile)
             .service(delete_user_filter_profile)

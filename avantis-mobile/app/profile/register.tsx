@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
-import { useNavigation, useRouter, Stack } from "expo-router";
+import { useNavigation, useRouter, Stack, Link } from "expo-router";
 import { getHeaderOptionsLoggedIn, getHeaderOptionsLoggedOut } from '@/components/navigation/NavbarSettings';
 import { AuthContext } from "@/context/AuthContext";
 
@@ -182,6 +182,9 @@ export default function RegisterScreen() {
         >
           <Text>Register</Text>
         </TouchableOpacity>
+        <Text style={{marginTop: 15}}>Already have an account?
+          <Link style={{ color: "blue" }} href="/profile/login"> Sign in</Link>
+        </Text>
       </View>
     </ScrollView>
   )

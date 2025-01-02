@@ -132,3 +132,6 @@ dist
 # Rust project
 backend/emp-backend/target
 backend/emp-backend/.vscode
+
+# Scraper
+scraper/.mypy_cache

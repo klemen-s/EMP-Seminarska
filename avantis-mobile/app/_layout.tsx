@@ -11,6 +11,7 @@ import { CartDispatchContext, CartContext } from "@/context/CartContext";
 // to add auth context and reducers
 import { authReducer } from "@/reducers/AuthReducer";
 import { AuthContext, AuthDispatchContext } from "@/context/AuthContext";
+import 'react-native-get-random-values';
 
 
 export default function RootLayout() {

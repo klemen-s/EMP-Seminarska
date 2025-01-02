@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useContext } from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
-import { useLocalSearchParams, useNavigation, Stack } from "expo-router";
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { useLocalSearchParams, useNavigation, Stack, useRouter } from "expo-router";
 import { Product } from "@/types";
+import { ObjectId } from "bson";
 import { CartDispatchContext } from "@/context/CartContext";
 import { AuthContext } from "@/context/AuthContext";
 import { getHeaderOptionsLoggedIn, getHeaderOptionsLoggedOut } from '@/components/navigation/NavbarSettings';
+import { getItemAsync } from "expo-secure-store";
 
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const navigation = useNavigation();
+  const router = useRouter();
+
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -18,7 +22,7 @@ export default function ProductDetailScreen() {
   const auth = useContext(AuthContext);
 
 
-  const handleCart = () => {
+  const handleCart = async () => {
     if (!selectedSize) {
       alert('Please select a size before adding to the cart!');
       return;
@@ -26,6 +30,36 @@ export default function ProductDetailScreen() {
     if (!selectedColor) {
       alert("Please select the product color...");
       return;
+    }
+
+    const userId = await getItemAsync("userId");
+    const jwt = await getItemAsync("userToken");
+    if (userId == null || jwt == null) {
+      alert("Not logged in...");
+      return;
+    }
+    const addedProduct = {
+      size: selectedSize,
+      quantity: 1,
+      color: selectedColor,
+      product_id: new ObjectId(product?.id),
+    }
+
+    const res = await fetch("http://localhost:5001/cart", {
+      method: "POST",
+      body: JSON.stringify({
+        "user_id": new ObjectId(userId),
+        "products": [addedProduct]
+      }),
+      headers: {
+        "Authorization": `Bearer ${jwt}`,
+        "Content-Type": "application/json",
+      }
+    });
+
+
+    if (res.ok) {
+      alert(`Item ${product?.productName} added to cart!`)
     }
 
     if (cartDispatch) {
@@ -154,13 +188,23 @@ export default function ProductDetailScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        {auth.userToken ? (
 
-        <TouchableOpacity
-          style={styles.addToCartButton}
-          onPress={handleCart}
-        >
-          <Text style={styles.addToCartText}>Add to Cart</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={handleCart}
+          >
+            <Text style={styles.addToCartText}>Add to Cart</Text>
+          </TouchableOpacity>
+        ) : (
+
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={() => router.replace("/profile/login")}
+          >
+            <Text style={styles.addToCartText}>Sign in to add product to cart</Text>
+          </TouchableOpacity>
+        )}
 
       </View>
     </ScrollView>

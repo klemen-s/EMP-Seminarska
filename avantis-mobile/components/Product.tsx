@@ -25,7 +25,7 @@ export default function Product({ productName, imageUrl, id, price, marginTop }:
             <View
                 style={{
                     backgroundColor: "#d3d3d3",
-                    height: 90,
+                    minHeight: 100,
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
@@ -33,8 +33,8 @@ export default function Product({ productName, imageUrl, id, price, marginTop }:
                     paddingVertical: 10,
                 }}
             >
-                <Text style={{ fontSize: 25, fontWeight: '600' }}>{productName}</Text>
-                <Text style={{ fontSize: 20, marginTop: 5 }}>{price}€</Text>
+                <Text style={{ fontSize: 20, fontWeight: '600', textAlign: "center" }}>{productName}</Text>
+                <Text style={{ fontSize: 20, marginTop: 10, textAlign: "center" }}>{price}€</Text>
             </View>
             <Link
                 href={`/products/${id}`}
