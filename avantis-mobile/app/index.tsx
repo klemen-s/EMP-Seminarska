@@ -10,7 +10,11 @@ export default function Index() {
 
   const [gender, setGender] = useState('men');
   const auth = useContext(AuthContext);
+  const [quote, setQuote] = useState("");
 
+  function rand_quote(quotes) {
+    return quotes[~~(quotes.length * Math.random())];
+  }
 
   useEffect(() => {
     if (auth.userToken != null) {
@@ -18,6 +22,41 @@ export default function Index() {
     } else {
       navigation.setOptions({ ...getHeaderOptionsLoggedOut(navigation) });
     }
+
+    async function getQuotes() {
+      let rapidApiKey = process.env.RAPIDAPI_KEY;
+
+      try {
+        const data = null;
+
+        const xhr = new XMLHttpRequest();
+        xhr.withCredentials = true;
+
+        xhr.addEventListener('readystatechange', function () {
+          if (this.readyState === this.DONE) {
+            let data = this.responseText;
+
+            const json = JSON.parse(data);
+            const quotes = json.filter((quote) => {
+              return quote.quote.length < 50
+            })
+            const quote = rand_quote(quotes);
+            setQuote(quote.quote);
+          }
+        });
+
+        xhr.open('GET', 'https://the-personal-quotes.p.rapidapi.com/quotes/tags/happiness');
+        xhr.setRequestHeader('x-rapidapi-key', rapidApiKey || '');
+        xhr.setRequestHeader('x-rapidapi-host', 'the-personal-quotes.p.rapidapi.com');
+
+        xhr.send(data);
+      } catch (error) {
+        console.log(error);
+      }
+
+    }
+
+    getQuotes();
   }, [auth.userToken]);
 
   return (
@@ -68,6 +107,7 @@ export default function Index() {
       <Link href={`/products?gender=${gender}`} style={styles.button}>
         Go shop
       </Link>
+      <Text>{quote}</Text>
     </View >
 
   );

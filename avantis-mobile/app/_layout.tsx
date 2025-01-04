@@ -3,7 +3,6 @@ import { Stack } from "expo-router";
 import { TouchableOpacity, Image, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useEffect } from 'react';
-import { Accelerometer } from 'expo-sensors';
 
 import { cartReducer } from "@/reducers/CartReducer";
 import { CartDispatchContext, CartContext } from "@/context/CartContext";
@@ -12,10 +11,13 @@ import { CartDispatchContext, CartContext } from "@/context/CartContext";
 import { authReducer } from "@/reducers/AuthReducer";
 import { AuthContext, AuthDispatchContext } from "@/context/AuthContext";
 import 'react-native-get-random-values';
+import { useNavigationState } from '@react-navigation/native';
+
 
 
 export default function RootLayout() {
   const navigation = useNavigation();
+  const state = useNavigationState((state) => state);
 
 
   const [cartState, cartDispatch] = useReducer(cartReducer, { items: [], totalAmount: 0 });
@@ -29,22 +31,9 @@ export default function RootLayout() {
   const auth = useContext(AuthContext);
 
   useEffect(() => {
-    let subscription;
-    const subscribe = () => {
-      subscription = Accelerometer.addListener(accelerometerData => {
-        const { x, y, z } = accelerometerData;
-        const totalForce = Math.sqrt(x * x + y * y + z * z);
-        if (totalForce > 1.5) {
-
-          navigation.goBack();
-        }
-      });
-      Accelerometer.setUpdateInterval(1000);
-    };
-
-    subscribe();
-    return () => subscription && subscription.remove();
-  }, [navigation]);
+    const currentRoute = state.routes[state.index]?.name;
+    console.log(`Current route: ${currentRoute}`);
+  }, [state]);
 
 
   const headerOptions = {
