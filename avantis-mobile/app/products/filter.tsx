@@ -65,6 +65,10 @@ export default function FilterScreen() {
     } else {
       navigation.setOptions({ ...getHeaderOptionsLoggedOut(navigation) });
     }
+
+    return () => {
+      console.log("Destroying filters component...");
+    }
   }, [])
 
   function colorsHandler(color: string, value: boolean) {

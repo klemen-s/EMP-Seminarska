@@ -1,8 +1,7 @@
-import { useReducer, useContext } from "react";
-import { Stack } from "expo-router";
-import { TouchableOpacity, Image, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useEffect } from 'react';
+import { useReducer, useContext, useEffect, useState, useRef } from "react";
+import { Stack, useNavigation } from "expo-router";
+import { TouchableOpacity, Image, View, AppState, AppStateStatus } from 'react-native';
+
 
 import { cartReducer } from "@/reducers/CartReducer";
 import { CartDispatchContext, CartContext } from "@/context/CartContext";
@@ -11,13 +10,28 @@ import { CartDispatchContext, CartContext } from "@/context/CartContext";
 import { authReducer } from "@/reducers/AuthReducer";
 import { AuthContext, AuthDispatchContext } from "@/context/AuthContext";
 import 'react-native-get-random-values';
-import { useNavigationState } from '@react-navigation/native';
-
-
 
 export default function RootLayout() {
   const navigation = useNavigation();
-  const state = useNavigationState((state) => state);
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        console.log('App has come to the foreground!');
+      }
+
+      appState.current = nextAppState;
+      console.log('AppState', appState.current);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
 
   const [cartState, cartDispatch] = useReducer(cartReducer, { items: [], totalAmount: 0 });
@@ -29,11 +43,6 @@ export default function RootLayout() {
   });
 
   const auth = useContext(AuthContext);
-
-  useEffect(() => {
-    const currentRoute = state.routes[state.index]?.name;
-    console.log(`Current route: ${currentRoute}`);
-  }, [state]);
 
 
   const headerOptions = {
